@@ -1,10 +1,5 @@
 import numpy as np
-import random
-
-
-def seed_everything(seed):
-    random.seed(seed)
-    np.random.seed(seed)
+import matplotlib.pyplot as plt
 
 
 class KMeans():
@@ -41,8 +36,12 @@ class KMeans():
             self.centroids = np.random.uniform(
                 size=(self.k, self.num_features))
         elif seed == "cluster":
-            self.centroids = np.copy(self.dataset[np.random.choice(
-                self.num_samples, self.k, replace=False)])
+            if (self.k > self.num_samples):  # hack for large k
+                self.centroids = np.copy(self.dataset[np.random.choice(
+                    self.num_samples, self.k, replace=True)])
+            else:
+                self.centroids = np.copy(self.dataset[np.random.choice(
+                    self.num_samples, self.k, replace=False)])
         else:
             raise ValueError("seed must be in ['random', 'cluster']")
         # store old centroids for convergence check
@@ -52,11 +51,7 @@ class KMeans():
         self.assign_clusters()
 
     def converged(self):
-        if len(self.losses) < 2:
-            return False
-        if (abs(self.losses[-1] - self.losses[-2]) < self.tol):
-            return True
-        return False
+        return np.all(np.linalg.norm(self.centroids - self.old_centroids, ord=2, axis=1) < self.tol)
 
     def assign_clusters(self):
         for i in range(self.num_samples):
@@ -71,28 +66,32 @@ class KMeans():
                 centroid_labels[i] = np.argmax(count)
         return centroid_labels
 
-    def fit(self, verbose=False):
+    def fit(self, verbose=False, plot=False):
         for i in range(self.max_iter):
             self.assign_clusters()
             self.update_centroids()
             loss = self.calc_loss()
             self.losses.append(loss)
             if verbose:
-                print(f"Iteration {i} Loss: {loss}")
+                print(f"Iteration {i+1} Loss: {loss}")
                 print("---------------------------")
-            if self.converged() is True:
+            if self.converged():
+                print(f"Total Iterations: {i+1}, Loss: {loss}")
                 break
             self.old_centroids = np.copy(self.centroids)
+        if plot:
+            self.plot_loss()
+
+    def plot_loss(self):
+        plt.plot(self.losses)
+        plt.xlabel("Iterations")
+        plt.ylabel("Loss")
+        plt.show()
 
     def calc_loss(self):
-        loss = np.mean(np.linalg.norm(
-            self.dataset - self.centroids[self.cluster_labels], ord=2, axis=1), axis=0)
+        loss = np.mean(np.square(np.linalg.norm(
+            self.dataset - self.centroids[self.cluster_labels], ord=2, axis=1)), axis=0)
         return loss
-
-    def calculate_loss(self):
-        loss = np.array(np.array([np.linalg.norm(self.data[i, :]-self.centers[int(
-            self.class_labels[i]), :], ord=2) for i in range(self.num_samples)]))
-        return np.mean(loss)
 
     def update_centroids(self):
         for i in range(self.k):

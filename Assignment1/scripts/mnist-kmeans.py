@@ -49,12 +49,12 @@ def plot_centroids(kmeans, centroids):
     centroid_labels = kmeans.get_centroid_labels()
 
     fig = plt.figure(figsize=(20, 20))
-    nrows = 4
+    nrows = 5
     ncols = kmeans.k // nrows + kmeans.k % nrows
     for i in range(kmeans.k):
         fig.add_subplot(nrows, ncols, i+1)
         plt.imshow(centroid_images[i], cmap="gray")
-        plt.title(f"Label: {centroid_labels[i]}", fontsize=10)
+        plt.title(f"Label: {centroid_labels[i]}", fontsize=15)
         plt.axis("off")
     plt.show()
 
@@ -69,7 +69,7 @@ def main(args: argparse.Namespace):
                     tol=args.tol,
                     seed=args.seed)
 
-    kmeans.fit(verbose=True)  # train the model
+    kmeans.fit(verbose=args.verbose, plot=True)  # train the model
     # predict the labels from input labels and centroids
     predictions = kmeans.predict(x_test)
     print(f"Accuracy: {np.mean(predictions == y_test)}")  # print the accuracy
@@ -105,6 +105,7 @@ if __name__ == "__main__":
                         default="cluster", help="cluster or random")
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()
-
+    seed_everything(35)
+    
     # main(args)
     plot_jclust(args)
